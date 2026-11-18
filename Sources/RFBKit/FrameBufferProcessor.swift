@@ -152,6 +152,7 @@ public class FrameBufferProcessor {
     
     /// Makes a `CGImage` from the current frame buffer
     private func createImage() -> CGImage {
+        print("DIAG nonzero bytes: \(pixelBuffer.reduce(0) { $1 != 0 ? $0 + 1 : $0 }) of \(pixelBuffer.count)")
         return ImageProcessor.imageFromARGB32Bitmap(data: NSData(bytes: &pixelBuffer, length: pixelBuffer.count), width: Int(frameBuffer!.width), height: Int(frameBuffer!.height))
     }
     

@@ -212,11 +212,10 @@ public class AppleAuthenticator: Authenticator {
     ///   - password: User's password
     public func authenticate(username: String, password: String) throws {
         
-        guard inputStream.hasBytesAvailable,
-              let generator = inputStream.readData(maxLength: 2),
-              let keyLength = inputStream.readUInt16(),
-              let primeMod = inputStream.readData(maxLength: Int(keyLength)),
-              let serverPubKey = inputStream.readData(maxLength: Int(keyLength)) else {
+        guard let generator = inputStream.readExactData(count: 2),
+              let keyLength = inputStream.readExactUInt16BE(),
+              let primeMod = inputStream.readExactData(count: Int(keyLength)),
+              let serverPubKey = inputStream.readExactData(count: Int(keyLength)) else {
                   throw RFBError.badStream
               }
         

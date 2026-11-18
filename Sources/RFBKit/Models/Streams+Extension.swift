@@ -27,6 +27,33 @@ extension InputStream {
         return buffer
     }
     
+    /// Reads exactly `count` bytes, looping until all of them have arrived.
+    /// A single `read` may return fewer bytes than requested.
+    /// - Returns: The bytes read, or `nil` if the stream ended or failed first.
+    func readExactBytes(count: Int) -> [UInt8]? {
+        var buffer = [UInt8](repeating: 0, count: count)
+        var offset = 0
+        while offset < count {
+            let outcome = buffer.withUnsafeMutableBufferPointer { pointer in
+                read(pointer.baseAddress! + offset, maxLength: count - offset)
+            }
+            guard outcome > 0 else { return nil }
+            offset += outcome
+        }
+        return buffer
+    }
+    
+    /// Reads exactly `count` bytes as `Data`
+    func readExactData(count: Int) -> Data? {
+        readExactBytes(count: count).map { Data($0) }
+    }
+    
+    /// Reads 16 bits in network (big-endian) byte order
+    func readExactUInt16BE() -> UInt16? {
+        guard let bytes = readExactBytes(count: 2) else { return nil }
+        return UInt16(bytes[0]) << 8 | UInt16(bytes[1])
+    }
+    
     /// Reads bytes from the stream
     /// - Parameter maxLength: The maximum number of bytes to read
     /// - Returns: The bytes read as `Data`

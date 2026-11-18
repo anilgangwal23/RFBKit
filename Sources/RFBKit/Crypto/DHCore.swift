@@ -104,9 +104,9 @@ class DiffieHellmanCore: NSObject {
             let bnG = CCryptoBoringSSL_BN_new()
             let gData = pk.makeUInt8DataPointer()
             let gPointer = UnsafePointer<UInt8>(gData)
-            CCryptoBoringSSL_BN_bin2bn(gPointer, Int(size), bnG)
+            CCryptoBoringSSL_BN_bin2bn(gPointer, pk.count, bnG)
             
-            CCryptoBoringSSL_DH_compute_key(&computedKey, bnG, dhKey)
+            guard CCryptoBoringSSL_DH_compute_key_padded(&computedKey, bnG, dhKey) == size else { return nil }
             return Data(computedKey)
         }
         return nil
@@ -114,10 +114,11 @@ class DiffieHellmanCore: NSObject {
     
     func extractPublicKey() -> Data? {
         if let dhKey = dhKey, let bnP = dhKey.pointee.pub_key {
-            #warning("Constant! Should be infered...")
-            var data = [UInt8](Data(count: Int(128)))
+            // The public key is left-padded to the prime's byte length (DH_size), as RFB expects.
+            let size = Int(CCryptoBoringSSL_DH_size(dhKey))
+            var data = [UInt8](repeating: 0, count: size)
             
-            CCryptoBoringSSL_BN_bn2bin(bnP, &data)
+            guard CCryptoBoringSSL_BN_bn2bin_padded(&data, size, bnP) == 1 else { return nil }
             
             return Data(data)
         }

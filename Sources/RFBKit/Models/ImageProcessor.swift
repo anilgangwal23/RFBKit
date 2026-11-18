@@ -7,7 +7,6 @@
 
 
 import Foundation
-import CoreImage
 import CoreGraphics
 
 
@@ -31,8 +30,10 @@ class ImageProcessor {
         let providerRef = CGDataProvider(data: data)
         let rgb = CGColorSpaceCreateDeviceRGB()
         
-        let bitmapinfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue)
-            .union(.byteOrder32Big)
+        // Server pixels are B,G,R,X in memory (little-endian 32-bit). CGImage rejects
+        // alpha `none` at 32 bpp, so use `noneSkipFirst` with little-endian byte order.
+        let bitmapinfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipFirst.rawValue)
+            .union(.byteOrder32Little)
         
         let cgim: CGImage = CGImage(
             width: width,
@@ -47,15 +48,6 @@ class ImageProcessor {
             shouldInterpolate: true,
             intent: CGColorRenderingIntent.defaultIntent)!
         
-        let ciInput = CIImage(cgImage: cgim)
-        let ctx = CIContext(options: nil)
-        let swapKernel = CIColorKernel(source:
-            "kernel vec4 swapRedAndGreenAmount(__sample s) {" +
-                "return s.bgra;" +
-            "}"
-        )
-        let ciOutput = swapKernel?.apply(extent: (ciInput.extent), arguments: [ciInput as Any])
-        
-        return ctx.createCGImage(ciOutput!, from: (ciInput.extent))!
+        return cgim
     }
 }
